@@ -4,8 +4,6 @@
 # Maps between UserEntity (domain) and CustomUser (ORM model).
 # ============================================
 
-from typing import Optional
-
 from apps.users.application.interfaces import AbstractUserRepository
 from apps.users.domain.entities import UserEntity
 from apps.users.infrastructure.models import CustomUser
@@ -35,7 +33,7 @@ class DjangoUserRepository(AbstractUserRepository):
             last_login=model.last_login,
         )
 
-    def get_by_id(self, user_id: int) -> Optional[UserEntity]:
+    def get_by_id(self, user_id: int) -> UserEntity | None:
         """Retrieve a user by primary key. Returns None if not found."""
         try:
             model = CustomUser.objects.get(id=user_id)
@@ -43,7 +41,7 @@ class DjangoUserRepository(AbstractUserRepository):
         except CustomUser.DoesNotExist:
             return None
 
-    def get_by_email(self, email: str) -> Optional[UserEntity]:
+    def get_by_email(self, email: str) -> UserEntity | None:
         """Retrieve a user by email. Returns None if not found."""
         try:
             model = CustomUser.objects.get(email=email)

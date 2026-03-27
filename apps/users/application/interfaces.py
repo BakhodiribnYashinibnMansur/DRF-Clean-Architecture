@@ -5,7 +5,6 @@
 # ============================================
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from apps.users.domain.entities import UserEntity
 
@@ -17,12 +16,12 @@ class AbstractUserRepository(ABC):
     """
 
     @abstractmethod
-    def get_by_id(self, user_id: int) -> Optional[UserEntity]:
+    def get_by_id(self, user_id: int) -> UserEntity | None:
         """Retrieve a user entity by primary key. Returns None if not found."""
         ...
 
     @abstractmethod
-    def get_by_email(self, email: str) -> Optional[UserEntity]:
+    def get_by_email(self, email: str) -> UserEntity | None:
         """Retrieve a user entity by email. Returns None if not found."""
         ...
 
