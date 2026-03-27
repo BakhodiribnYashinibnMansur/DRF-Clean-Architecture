@@ -56,7 +56,7 @@ sudo -u postgres psql -c "CREATE DATABASE drf_db;"
 ```bash
 make migrate
 # yoki
-python manage.py makemigrations && python manage.py migrate
+uv run python manage.py makemigrations && uv run python manage.py migrate
 ```
 
 ## Redis Muammolari
@@ -157,7 +157,7 @@ curl -X POST http://localhost:8000/api/users/token/ \
 2. Parolni tekshiring (case-sensitive)
 3. Admin paneldan foydalanuvchining `is_active` holatini tekshiring:
 ```bash
-python manage.py shell -c "
+uv run python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
 user = User.objects.filter(email='user@example.com').first()
@@ -178,8 +178,8 @@ if user: print(f'is_active: {user.is_active}')
 # "apps.books.apps.BooksConfig" va "apps.users.apps.UsersConfig" bo'lishi kerak
 
 # App nomini aniq ko'rsatib ko'ring
-python manage.py makemigrations books
-python manage.py makemigrations users
+uv run python manage.py makemigrations books
+uv run python manage.py makemigrations users
 ```
 
 ### "Conflicting migrations"
@@ -188,7 +188,7 @@ python manage.py makemigrations users
 
 **Yechim:**
 ```bash
-python manage.py makemigrations --merge
+uv run python manage.py makemigrations --merge
 ```
 
 ### "django.db.utils.ProgrammingError: relation already exists"
@@ -198,7 +198,7 @@ python manage.py makemigrations --merge
 **Yechim:**
 ```bash
 # Ehtiyot bo'ling — bu migration ni qo'llanildi deb belgilaydi
-python manage.py migrate --fake
+uv run python manage.py migrate --fake
 ```
 
 > **Ogohlantirish:** `--fake` faqat ishonchingiz komil bo'lganda ishlatilsin.
@@ -255,7 +255,7 @@ cp .env.example .env
 ```bash
 make install
 # yoki
-pip install -r requirements.txt
+uv sync --all-extras
 ```
 
 ### "DisallowedHost at /"
@@ -288,7 +288,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1,your-domain.com
 # Django shell — interaktiv tekshirish
 make shell
 # yoki
-python manage.py shell
+uv run python manage.py shell
 
 # Django admin panel
 # http://localhost:8000/admin/ (superuser bilan)

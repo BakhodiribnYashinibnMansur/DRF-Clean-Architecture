@@ -1,8 +1,8 @@
-# Ma'lumotlar Bazasi (Database)
+# Database
 
-**PostgreSQL 16** — asosiy ma'lumotlar bazasi. **Redis 6.x** — cache va sessionlar uchun.
+**PostgreSQL 16** — primary database. **Redis 6.x** — for cache and sessions.
 
-## ER Diagramma
+## ER Diagram
 
 ```
 +-------------------------+           +-------------------------+
@@ -23,61 +23,61 @@
 +-------------------------+           +-------------------------+
 ```
 
-**Aloqa:** `books_book.created_by_id` → `users_customuser.id` (ForeignKey, ON DELETE SET NULL)
+**Relationship:** `books_book.created_by_id` → `users_customuser.id` (ForeignKey, ON DELETE SET NULL)
 
-## Jadvallar Tavsifi
+## Table Descriptions
 
 ### `users_customuser`
 
-Django `AbstractUser` dan meros olgan. `username` olib tashlangan — `email` asosiy identifikator.
+Inherits from Django `AbstractUser`. `username` is removed — `email` is the primary identifier.
 
-| Ustun | Turi | Null | Default | Constraint | Tavsif |
-|-------|------|------|---------|------------|--------|
-| `id` | BigAutoField | Yo'q | auto | PRIMARY KEY | Avtomatik ID |
-| `email` | EmailField | Yo'q | — | UNIQUE | Login uchun email |
-| `password` | CharField(128) | Yo'q | — | — | Hashed parol (bcrypt) |
-| `first_name` | CharField(150) | Yo'q | `""` | — | Ism |
-| `last_name` | CharField(150) | Yo'q | `""` | — | Familiya |
-| `bio` | TextField | Yo'q | `""` | — | Biografiya (ixtiyoriy) |
-| `date_of_birth` | DateField | Ha | `NULL` | — | Tug'ilgan sana |
-| `is_active` | BooleanField | Yo'q | `True` | — | Aktiv holat |
-| `is_staff` | BooleanField | Yo'q | `False` | — | Admin panelga kirish |
-| `is_superuser` | BooleanField | Yo'q | `False` | — | To'liq huquq |
-| `date_joined` | DateTimeField | Yo'q | `auto_now_add` | — | Ro'yxatdan o'tgan vaqt |
-| `last_login` | DateTimeField | Ha | `NULL` | — | Oxirgi kirish vaqti |
+| Column | Type | Null | Default | Constraint | Description |
+|--------|------|------|---------|------------|-------------|
+| `id` | BigAutoField | No | auto | PRIMARY KEY | Auto-generated ID |
+| `email` | EmailField | No | — | UNIQUE | Login email |
+| `password` | CharField(128) | No | — | — | Hashed password (bcrypt) |
+| `first_name` | CharField(150) | No | `""` | — | First name |
+| `last_name` | CharField(150) | No | `""` | — | Last name |
+| `bio` | TextField | No | `""` | — | Biography (optional) |
+| `date_of_birth` | DateField | Yes | `NULL` | — | Date of birth |
+| `is_active` | BooleanField | No | `True` | — | Active status |
+| `is_staff` | BooleanField | No | `False` | — | Admin panel access |
+| `is_superuser` | BooleanField | No | `False` | — | Full permissions |
+| `date_joined` | DateTimeField | No | `auto_now_add` | — | Registration timestamp |
+| `last_login` | DateTimeField | Yes | `NULL` | — | Last login timestamp |
 
-**Ordering:** `-date_joined` (eng yangi birinchi)
+**Ordering:** `-date_joined` (newest first)
 
 ### `books_book`
 
-| Ustun | Turi | Null | Default | Constraint | Tavsif |
-|-------|------|------|---------|------------|--------|
-| `id` | BigAutoField | Yo'q | auto | PRIMARY KEY | Avtomatik ID |
-| `title` | CharField(255) | Yo'q | — | — | Kitob nomi |
-| `author` | CharField(255) | Yo'q | — | — | Muallif ismi |
-| `isbn` | CharField(13) | Yo'q | — | UNIQUE, RegexValidator | ISBN (10 yoki 13 raqam) |
-| `published_date` | DateField | Yo'q | — | — | Nashr sanasi |
-| `page_count` | PositiveIntegerField | Yo'q | — | >= 0 | Sahifalar soni |
-| `language` | CharField(50) | Yo'q | `"English"` | — | Til |
-| `genre` | CharField(20) | Yo'q | `"other"` | choices, db_index | Janr (14 ta tanlov) |
-| `description` | TextField | Yo'q | `""` | — | Tavsif (ixtiyoriy) |
-| `created_by_id` | ForeignKey | Ha | `NULL` | FK → users_customuser | Yaratuvchi |
-| `created_at` | DateTimeField | Yo'q | `auto_now_add` | — | Yaratilgan vaqt |
-| `updated_at` | DateTimeField | Yo'q | `auto_now` | — | O'zgartirilgan vaqt |
+| Column | Type | Null | Default | Constraint | Description |
+|--------|------|------|---------|------------|-------------|
+| `id` | BigAutoField | No | auto | PRIMARY KEY | Auto-generated ID |
+| `title` | CharField(255) | No | — | — | Book title |
+| `author` | CharField(255) | No | — | — | Author name |
+| `isbn` | CharField(13) | No | — | UNIQUE, RegexValidator | ISBN (10 or 13 digits) |
+| `published_date` | DateField | No | — | — | Publication date |
+| `page_count` | PositiveIntegerField | No | — | >= 0 | Number of pages |
+| `language` | CharField(50) | No | `"English"` | — | Language |
+| `genre` | CharField(20) | No | `"other"` | choices, db_index | Genre (14 choices) |
+| `description` | TextField | No | `""` | — | Description (optional) |
+| `created_by_id` | ForeignKey | Yes | `NULL` | FK → users_customuser | Creator |
+| `created_at` | DateTimeField | No | `auto_now_add` | — | Creation timestamp |
+| `updated_at` | DateTimeField | No | `auto_now` | — | Last update timestamp |
 
-**Ordering:** `-created_at` (eng yangi birinchi)
+**Ordering:** `-created_at` (newest first)
 
 **ISBN Validator:**
 ```python
 regex = r"^\d{10}(\d{3})?$"
-# To'g'ri: "1234567890" (10 raqam), "1234567890123" (13 raqam)
-# Noto'g'ri: "123", "ISBN-10", "12345678901" (11 raqam)
+# Valid: "1234567890" (10 digits), "1234567890123" (13 digits)
+# Invalid: "123", "ISBN-10", "12345678901" (11 digits)
 ```
 
-## Genre Turlari
+## Genre Types
 
-| Qiymat | Ko'rinishi |
-|--------|-----------|
+| Value | Display |
+|-------|---------|
 | `fiction` | Fiction |
 | `non_fiction` | Non-Fiction |
 | `science` | Science |
@@ -93,75 +93,75 @@ regex = r"^\d{10}(\d{3})?$"
 | `self_help` | Self-Help |
 | `other` | Other |
 
-## Indexlar
+## Indexes
 
-### `books_book` indexlari
+### `books_book` indexes
 
-| Index nomi | Ustun(lar) | Turi | Sabab |
-|-----------|-----------|------|-------|
-| `idx_book_isbn` | `isbn` | B-tree | ISBN bo'yicha tez qidirish |
-| `idx_book_author` | `author` | B-tree | Muallif bo'yicha filtrlash |
-| `idx_book_created` | `-created_at` | B-tree (desc) | Default ordering tezlashtirish |
-| `books_book_genre_...` | `genre` | B-tree | Genre bo'yicha filtrlash (`db_index=True`) |
-| `books_book_isbn_key` | `isbn` | UNIQUE | Takrorlanmas ISBN |
+| Index name | Column(s) | Type | Reason |
+|------------|-----------|------|--------|
+| `idx_book_isbn` | `isbn` | B-tree | Fast lookup by ISBN |
+| `idx_book_author` | `author` | B-tree | Filter by author |
+| `idx_book_created` | `-created_at` | B-tree (desc) | Speed up default ordering |
+| `books_book_genre_...` | `genre` | B-tree | Filter by genre (`db_index=True`) |
+| `books_book_isbn_key` | `isbn` | UNIQUE | Unique ISBN constraint |
 
-### `users_customuser` indexlari
+### `users_customuser` indexes
 
-| Index nomi | Ustun(lar) | Turi |
-|-----------|-----------|------|
+| Index name | Column(s) | Type |
+|------------|-----------|------|
 | `users_customuser_pkey` | `id` | PRIMARY KEY |
 | `users_customuser_email_key` | `email` | UNIQUE |
 
-## On Delete Xatti-harakatlari
+## On Delete Behaviors
 
-| Aloqa | On Delete | Natija |
-|-------|-----------|--------|
-| `Book.created_by` → `CustomUser` | `SET_NULL` | User o'chirilsa, kitob qoladi (`created_by = NULL`) |
-| `User.groups` (M2M) | `CASCADE` | User o'chirilsa, guruh aloqasi ham o'chadi |
-| `User.user_permissions` (M2M) | `CASCADE` | User o'chirilsa, ruxsat aloqasi ham o'chadi |
+| Relationship | On Delete | Result |
+|-------------|-----------|--------|
+| `Book.created_by` → `CustomUser` | `SET_NULL` | If user is deleted, the book remains (`created_by = NULL`) |
+| `User.groups` (M2M) | `CASCADE` | If user is deleted, group associations are also deleted |
+| `User.user_permissions` (M2M) | `CASCADE` | If user is deleted, permission associations are also deleted |
 
-## Django Tizim Jadvallari
+## Django System Tables
 
-Loyihada avtomatik yaratilgan jadvallar:
+Auto-generated tables in the project:
 
-| Jadval | Vazifa |
-|--------|--------|
-| `django_migrations` | Qo'llanilgan migration'lar tarixi |
-| `django_content_type` | Model turlari registri |
-| `django_admin_log` | Admin panel amallar logi |
-| `django_session` | Sessiya ma'lumotlari (Redis bilan ishlatilmaydi) |
-| `auth_group` | Foydalanuvchi guruhlari |
-| `auth_permission` | Ruxsatlar |
-| `auth_group_permissions` | Guruh-ruxsat M2M |
-| `users_customuser_groups` | User-guruh M2M |
-| `users_customuser_user_permissions` | User-ruxsat M2M |
+| Table | Purpose |
+|-------|---------|
+| `django_migrations` | Applied migrations history |
+| `django_content_type` | Model type registry |
+| `django_admin_log` | Admin panel action log |
+| `django_session` | Session data (not used with Redis) |
+| `auth_group` | User groups |
+| `auth_permission` | Permissions |
+| `auth_group_permissions` | Group-permission M2M |
+| `users_customuser_groups` | User-group M2M |
+| `users_customuser_user_permissions` | User-permission M2M |
 
-## Migration Strategiyasi
+## Migration Strategy
 
-### Lokal muhitda
-
-```bash
-# Model o'zgartirgandan keyin:
-make makemigrations    # Migration fayllarini yaratish
-make migrate           # Bazaga qo'llash (makemigrations + migrate)
-```
-
-### Production muhitda
+### Local environment
 
 ```bash
-python manage.py migrate --no-input
+# After modifying a model:
+make makemigrations    # Generate migration files
+make migrate           # Apply to database (makemigrations + migrate)
 ```
 
-### Muhim qoidalar
+### Production environment
 
-1. Migration fayllarini **git ga commit** qiling
-2. `infrastructure/models.py` ni o'zgartirgandan keyin, proxy `models.py` ham ishlashini tekshiring
-3. Conflict bo'lsa: `python manage.py makemigrations --merge`
-4. Katta migratsiyalarni squash qilish: `python manage.py squashmigrations <app_label>`
+```bash
+uv run python manage.py migrate --no-input
+```
 
-## Redis (Cache va Sessions)
+### Important rules
 
-Redis ma'lumotlar bazasi emas — **cache** va **session** uchun ishlatiladi:
+1. **Commit** migration files to git
+2. After modifying `infrastructure/models.py`, verify the proxy `models.py` still works
+3. If there's a conflict: `uv run python manage.py makemigrations --merge`
+4. To squash large migrations: `uv run python manage.py squashmigrations <app_label>`
+
+## Redis (Cache and Sessions)
+
+Redis is not a database — it's used for **cache** and **sessions**:
 
 ```python
 # config/settings/base.py
@@ -174,4 +174,4 @@ CACHES = {
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 ```
 
-Redis o'chirilsa, cache va sessionlar yo'qoladi, lekin asosiy ma'lumotlar PostgreSQL da saqlanib qoladi.
+If Redis goes down, cache and sessions are lost, but core data remains safe in PostgreSQL.

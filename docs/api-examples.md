@@ -1,17 +1,17 @@
-# API Misollar (curl)
+# API Examples (curl)
 
-**Barcha misollar** `curl` buyrug'i bilan ko'rsatilgan. Base URL: `http://localhost:8000`
+**All examples** are shown using the `curl` command. Base URL: `http://localhost:8000`
 
-## JWT Token Flow (To'liq Jarayon)
+## JWT Token Flow (Complete Process)
 
 ```
-1. Register → user ma'lumotlari + tokens
+1. Register → user data + tokens
 2. Login   → access + refresh token
-3. So'rov  → Authorization: Bearer <access_token>
-4. Yangilash → refresh token bilan yangi access olish
+3. Request → Authorization: Bearer <access_token>
+4. Refresh → get new access token using refresh token
 ```
 
-### 1-qadam: Ro'yxatdan o'tish
+### Step 1: Register
 
 ```bash
 curl -X POST http://localhost:8000/api/users/register/ \
@@ -25,7 +25,7 @@ curl -X POST http://localhost:8000/api/users/register/ \
   }'
 ```
 
-Javob (201 Created):
+Response (201 Created):
 ```json
 {
   "user": {
@@ -45,7 +45,7 @@ Javob (201 Created):
 }
 ```
 
-### 2-qadam: Login (Token olish)
+### Step 2: Login (Obtain Token)
 
 ```bash
 curl -X POST http://localhost:8000/api/users/token/ \
@@ -56,7 +56,7 @@ curl -X POST http://localhost:8000/api/users/token/ \
   }'
 ```
 
-Javob (200 OK):
+Response (200 OK):
 ```json
 {
   "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOi...",
@@ -64,23 +64,23 @@ Javob (200 OK):
 }
 ```
 
-> `access` token — 30 daqiqa amal qiladi.
-> `refresh` token — 7 kun amal qiladi.
+> `access` token — valid for 30 minutes.
+> `refresh` token — valid for 7 days.
 
-### 3-qadam: Token ishlatish
+### Step 3: Using the Token
 
-Har bir himoyalangan so'rovda `Authorization` headerini qo'shing:
+Include the `Authorization` header in every protected request:
 
 ```bash
 curl -X GET http://localhost:8000/api/users/profile/ \
   -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOi..."
 ```
 
-> **Muhim:** `Bearer` so'zi kerak, `B` katta harf bilan.
+> **Important:** The `Bearer` keyword is required, with a capital `B`.
 
-### 4-qadam: Token yangilash
+### Step 4: Refresh Token
 
-Access token muddati tugaganda, refresh token bilan yangi access oling:
+When the access token expires, use the refresh token to obtain a new access token:
 
 ```bash
 curl -X POST http://localhost:8000/api/users/token/refresh/ \
@@ -90,27 +90,27 @@ curl -X POST http://localhost:8000/api/users/token/refresh/ \
   }'
 ```
 
-Javob (200 OK):
+Response (200 OK):
 ```json
 {
   "access": "eyJ0eXAiOiJKV1QiLCJhbGciOi..."
 }
 ```
 
-> `ROTATE_REFRESH_TOKENS=True` — har safar yangi refresh token ham beriladi.
+> `ROTATE_REFRESH_TOKENS=True` — a new refresh token is also issued each time.
 
 ---
 
-## Users — Profile Endpointlari
+## Users — Profile Endpoints
 
-### Profilni ko'rish
+### View Profile
 
 ```bash
 curl -X GET http://localhost:8000/api/users/profile/ \
   -H "Authorization: Bearer <access_token>"
 ```
 
-### Profilni o'zgartirish
+### Update Profile
 
 ```bash
 curl -X PATCH http://localhost:8000/api/users/profile/ \
@@ -118,14 +118,14 @@ curl -X PATCH http://localhost:8000/api/users/profile/ \
   -H "Content-Type: application/json" \
   -d '{
     "first_name": "Alisher",
-    "bio": "Backend dasturchi",
+    "bio": "Backend developer",
     "date_of_birth": "1995-03-15"
   }'
 ```
 
-> `email` va `date_joined` o'zgartirib bo'lmaydi (read-only).
+> `email` and `date_joined` cannot be changed (read-only).
 
-### Parolni o'zgartirish
+### Change Password
 
 ```bash
 curl -X PUT http://localhost:8000/api/users/change-password/ \
@@ -138,7 +138,7 @@ curl -X PUT http://localhost:8000/api/users/change-password/ \
   }'
 ```
 
-Javob (200 OK):
+Response (200 OK):
 ```json
 {
   "message": "Password changed successfully.",
@@ -149,20 +149,20 @@ Javob (200 OK):
 }
 ```
 
-> Parol o'zgartirilgandan keyin **yangi tokenlar** qaytariladi.
+> After changing the password, **new tokens** are returned.
 
 ---
 
-## Users — Management Endpointlari (Admin)
+## Users — Management Endpoints (Admin)
 
-### Barcha foydalanuvchilar ro'yxati (faqat admin)
+### List All Users (admin only)
 
 ```bash
 curl -X GET http://localhost:8000/api/users/manage/ \
   -H "Authorization: Bearer <admin_access_token>"
 ```
 
-Javob (200 OK):
+Response (200 OK):
 ```json
 {
   "count": 2,
@@ -191,7 +191,7 @@ Javob (200 OK):
 }
 ```
 
-### Foydalanuvchi yaratish (faqat admin)
+### Create User (admin only)
 
 ```bash
 curl -X POST http://localhost:8000/api/users/manage/ \
@@ -199,40 +199,40 @@ curl -X POST http://localhost:8000/api/users/manage/ \
   -H "Content-Type: application/json" \
   -d '{
     "email": "newuser@example.com",
-    "first_name": "Yangi",
-    "last_name": "Foydalanuvchi",
+    "first_name": "New",
+    "last_name": "User",
     "is_active": true,
     "is_staff": false
   }'
 ```
 
-### Foydalanuvchini ko'rish (admin yoki o'zi)
+### View User (admin or self)
 
 ```bash
 curl -X GET http://localhost:8000/api/users/manage/2/ \
   -H "Authorization: Bearer <access_token>"
 ```
 
-### Foydalanuvchini o'chirish (faqat admin)
+### Delete User (admin only)
 
 ```bash
 curl -X DELETE http://localhost:8000/api/users/manage/2/ \
   -H "Authorization: Bearer <admin_access_token>"
 ```
 
-Javob: `204 No Content`
+Response: `204 No Content`
 
 ---
 
-## Books Endpointlari
+## Books Endpoints
 
-### Kitoblar ro'yxati (autentifikatsiya shart emas)
+### List Books (authentication not required)
 
 ```bash
 curl -X GET http://localhost:8000/api/books/
 ```
 
-Javob (200 OK):
+Response (200 OK):
 ```json
 {
   "count": 1,
@@ -258,7 +258,7 @@ Javob (200 OK):
 }
 ```
 
-### Kitob yaratish (autentifikatsiya kerak)
+### Create Book (authentication required)
 
 ```bash
 curl -X POST http://localhost:8000/api/books/ \
@@ -276,7 +276,7 @@ curl -X POST http://localhost:8000/api/books/ \
   }'
 ```
 
-Javob (201 Created):
+Response (201 Created):
 ```json
 {
   "id": 1,
@@ -297,93 +297,93 @@ Javob (201 Created):
 }
 ```
 
-### Kitobni ko'rish
+### View Book
 
 ```bash
 curl -X GET http://localhost:8000/api/books/1/
 ```
 
-### Kitobni yangilash (owner yoki admin)
+### Update Book (owner or admin)
 
 ```bash
 curl -X PATCH http://localhost:8000/api/books/1/ \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
-    "description": "Yangilangan tavsif."
+    "description": "Updated description."
   }'
 ```
 
-### Kitobni o'chirish (owner yoki admin)
+### Delete Book (owner or admin)
 
 ```bash
 curl -X DELETE http://localhost:8000/api/books/1/ \
   -H "Authorization: Bearer <access_token>"
 ```
 
-Javob: `204 No Content`
+Response: `204 No Content`
 
 ---
 
-## Filtrlash va Qidirish
+## Filtering and Search
 
-### Filtrlash misollari
+### Filtering Examples
 
 ```bash
-# Nomi bo'yicha (case-insensitive, partial match)
+# By title (case-insensitive, partial match)
 curl "http://localhost:8000/api/books/?title=python"
 
-# Muallif bo'yicha
+# By author
 curl "http://localhost:8000/api/books/?author=martin"
 
-# Janr bo'yicha (aniq qiymat)
+# By genre (exact match)
 curl "http://localhost:8000/api/books/?genre=fiction"
 
-# Til bo'yicha (case-insensitive, aniq)
+# By language (case-insensitive, exact)
 curl "http://localhost:8000/api/books/?language=english"
 
-# Nashr sanasi oralig'i
+# Published date range
 curl "http://localhost:8000/api/books/?published_after=2020-01-01&published_before=2023-12-31"
 
-# Sahifalar soni oralig'i
+# Page count range
 curl "http://localhost:8000/api/books/?min_pages=100&max_pages=500"
 
-# Bir nechta filterni birlashtirish
+# Combining multiple filters
 curl "http://localhost:8000/api/books/?genre=technology&min_pages=200&ordering=title"
 ```
 
-### Qidirish (Search)
+### Search
 
-`title`, `author`, `isbn` ichidan qidiradi:
+Searches across `title`, `author`, `isbn`:
 
 ```bash
 curl "http://localhost:8000/api/books/?search=clean+code"
 ```
 
-### Saralash (Ordering)
+### Ordering
 
 ```bash
-# Nomi bo'yicha (A → Z)
+# By title (A → Z)
 curl "http://localhost:8000/api/books/?ordering=title"
 
-# Nashr sanasi bo'yicha (eng yangisi birinchi)
+# By published date (newest first)
 curl "http://localhost:8000/api/books/?ordering=-published_date"
 
-# Sahifalar soni bo'yicha
+# By page count
 curl "http://localhost:8000/api/books/?ordering=page_count"
 ```
 
-Mavjud ordering maydonlari: `title`, `author`, `published_date`, `page_count`, `created_at`
+Available ordering fields: `title`, `author`, `published_date`, `page_count`, `created_at`
 
 ### Pagination
 
-Har bir sahifada **10 ta** natija. Keyingi sahifaga o'tish:
+Each page contains **10** results. To navigate to the next page:
 
 ```bash
 curl "http://localhost:8000/api/books/?page=2"
 ```
 
-Javob formati:
+Response format:
 ```json
 {
   "count": 25,
@@ -395,9 +395,9 @@ Javob formati:
 
 ---
 
-## Xato Javoblari
+## Error Responses
 
-### 400 Bad Request — Validatsiya xatosi
+### 400 Bad Request — Validation Error
 
 ```json
 {
@@ -406,7 +406,7 @@ Javob formati:
 }
 ```
 
-### 401 Unauthorized — Token yo'q yoki muddati tugagan
+### 401 Unauthorized — Token missing or expired
 
 ```json
 {
@@ -414,7 +414,7 @@ Javob formati:
 }
 ```
 
-yoki:
+or:
 
 ```json
 {
@@ -423,7 +423,7 @@ yoki:
 }
 ```
 
-### 403 Forbidden — Ruxsat yo'q
+### 403 Forbidden — Permission denied
 
 ```json
 {
@@ -431,7 +431,7 @@ yoki:
 }
 ```
 
-### 404 Not Found — Mavjud emas
+### 404 Not Found — Resource does not exist
 
 ```json
 {
@@ -447,16 +447,16 @@ yoki:
 }
 ```
 
-Throttling limitlari:
-- Anonim: **100 so'rov/soat**
-- Autentifikatsiya qilingan: **1000 so'rov/soat**
+Throttling limits:
+- Anonymous: **100 requests/hour**
+- Authenticated: **1000 requests/hour**
 
 ---
 
-## API Hujjatlari
+## API Documentation
 
-| URL | Tavsif |
-|-----|--------|
-| `/api/docs/` | Swagger UI — interaktiv API tester |
-| `/api/redoc/` | ReDoc — chiroyli API hujjati |
+| URL | Description |
+|-----|-------------|
+| `/api/docs/` | Swagger UI — interactive API tester |
+| `/api/redoc/` | ReDoc — clean API documentation |
 | `/api/schema/` | OpenAPI schema (JSON) |

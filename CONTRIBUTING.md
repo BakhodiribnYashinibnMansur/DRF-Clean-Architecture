@@ -14,7 +14,7 @@ cp .env.example .env
 # .env ichidagi qiymatlarni o'zgartiring
 
 # 3. Dependencylarni o'rnating
-make install
+uv sync --all-extras
 
 # 4. Database migratsiyalari
 make migrate
@@ -62,7 +62,7 @@ type(scope): qisqa tavsif
 | `refactor` | Kod qayta yozish (funksionallik o'zgarmaydi) | `refactor(books): move validation to service layer` |
 | `test` | Test qo'shish yoki o'zgartirish | `test(users): add password change edge cases` |
 | `docs` | Dokumentatsiya | `docs: add API examples` |
-| `chore` | Texnik ishlar (config, dependency) | `chore: update requirements.txt` |
+| `chore` | Texnik ishlar (config, dependency) | `chore: update pyproject.toml` |
 
 ### Scope turlari
 
@@ -240,13 +240,13 @@ pytest -k "test_create" -v   # Nomi bo'yicha
 ## Foydali Buyruqlar
 
 ```bash
-make install         # Dependencylar o'rnatish
-make run            # Development server
-make migrate        # Migratsiyalar
-make test           # Testlar
-make test-cov       # Test coverage
-make lint           # Ruff lint
-make shell          # Django shell
-make superuser      # Superuser yaratish
-make flush          # Database tozalash
+uv sync --all-extras # Dependencylar o'rnatish
+make run             # Development server
+make migrate         # Migratsiyalar
+make test            # Testlar
+make test-cov        # Test coverage
+make lint            # Ruff lint
+make shell           # Django shell
+make superuser       # Superuser yaratish
+make flush           # Database tozalash
 ```

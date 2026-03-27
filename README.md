@@ -76,8 +76,8 @@ DRF/
 │       └── tests/
 │
 ├── conftest.py                      # Shared pytest fixtures
-├── setup.cfg                        # Pytest configuration
-├── requirements.txt                 # Dependencies
+├── pyproject.toml                   # Project config & dependencies
+├── uv.lock                         # Dependency lock file
 ├── Makefile                         # Dev commands
 ├── .env                             # Environment variables (local)
 └── .env.example                     # .env template
@@ -957,29 +957,24 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
 git clone <repo-url>
 cd DRF
 
-# 2. Create virtual environment
-python -m venv venv
-source venv/bin/activate
+# 2. Install dependencies (uv creates .venv automatically)
+uv sync --all-extras
 
-# 3. Install dependencies
-make install
-# or: pip install -r requirements.txt
-
-# 4. Configure environment
+# 3. Configure environment
 cp .env.example .env
 # Edit .env with your settings
 
-# 5. Run database migrations
+# 4. Run database migrations
 make migrate
-# or: python manage.py migrate
+# or: uv run python manage.py migrate
 
-# 6. Create admin user
+# 5. Create admin user
 make superuser
-# or: python manage.py createsuperuser
+# or: uv run python manage.py createsuperuser
 
-# 7. Start the server
+# 6. Start the server
 make run
-# or: python manage.py runserver 0.0.0.0:8000
+# or: uv run python manage.py runserver 0.0.0.0:8000
 ```
 
 ---
@@ -989,7 +984,7 @@ make run
 ```bash
 # Run all tests
 make test
-# or: pytest
+# or: uv run pytest
 
 # Result:
 # 143 tests passed

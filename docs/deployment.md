@@ -19,12 +19,15 @@ RUN apt-get update && apt-get install -y \
     libpq-dev gcc \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+
+# uv o'rnatish va dependencylar
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+RUN uv sync --frozen --no-dev
 
 COPY . .
 
-RUN python manage.py collectstatic --noinput
+RUN uv run python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
@@ -84,10 +87,10 @@ cp .env.example .env
 docker-compose up -d --build
 
 # Migratsiyalar
-docker-compose exec web python manage.py migrate --no-input
+docker-compose exec web uv run python manage.py migrate --no-input
 
 # Superuser yaratish
-docker-compose exec web python manage.py createsuperuser
+docker-compose exec web uv run python manage.py createsuperuser
 ```
 
 ## Environment Variables (Production)
@@ -226,11 +229,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: uv o'rnatish
+        uses: astral-sh/setup-uv@v4
+
       - name: Dependencies o'rnatish
-        run: pip install -r requirements.txt
+        run: uv sync --all-extras
 
       - name: Lint tekshirish
-        run: ruff check apps/
+        run: uv run ruff check apps/
 
       - name: Testlarni ishga tushirish
         env:
@@ -242,14 +248,14 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
           REDIS_URL: redis://localhost:6379/0
-        run: pytest -v --cov=apps
+        run: uv run pytest -v --cov=apps
 ```
 
 ## Static Fayllar
 
 ```bash
 # Collect static
-python manage.py collectstatic --noinput
+uv run python manage.py collectstatic --noinput
 
 # Static fayllar STATIC_ROOT = BASE_DIR / "staticfiles" ga yig'iladi
 # Nginx yoki CDN orqali xizmat ko'rsating
@@ -266,10 +272,10 @@ location /static/ {
 
 ```bash
 # Docker bilan
-docker-compose exec web python manage.py migrate --no-input
+docker-compose exec web uv run python manage.py migrate --no-input
 
 # Docker siz
-DJANGO_ENV=production python manage.py migrate --no-input
+DJANGO_ENV=production uv run python manage.py migrate --no-input
 ```
 
 > **Muhim:** Production da `makemigrations` ishlatmang — faqat `migrate`.
