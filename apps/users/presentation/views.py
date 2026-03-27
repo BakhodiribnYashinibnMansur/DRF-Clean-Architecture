@@ -6,9 +6,14 @@
 
 from django.contrib.auth import get_user_model
 from rest_framework import generics, status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from apps.users.application.services import UserService
+from apps.users.domain.exceptions import DuplicateEmailError, InvalidPasswordError
+from apps.users.infrastructure.repositories import DjangoUserRepository
 
 from .permissions import IsAdminOrSelf
 from .serializers import (
@@ -20,6 +25,10 @@ from .serializers import (
 )
 
 User = get_user_model()
+
+
+def _get_user_service() -> UserService:
+    return UserService(repository=DjangoUserRepository())
 
 
 class RegisterView(generics.CreateAPIView):
@@ -37,9 +46,20 @@ class RegisterView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
 
-        # Generate JWT tokens for the newly registered user
+        data = serializer.validated_data
+        service = _get_user_service()
+        try:
+            entity = service.register_user(
+                email=data["email"],
+                password=data["password"],
+                first_name=data.get("first_name", ""),
+                last_name=data.get("last_name", ""),
+            )
+        except DuplicateEmailError:
+            raise ValidationError({"email": "This email is already registered."})
+
+        user = User.objects.get(id=entity.id)
         refresh = RefreshToken.for_user(user)
 
         return Response(
@@ -68,6 +88,12 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         """Return the currently authenticated user."""
         return self.request.user
+
+    def perform_update(self, serializer):
+        """Update profile through the service layer."""
+        service = _get_user_service()
+        service.update_profile(self.request.user.id, **serializer.validated_data)
+        serializer.instance.refresh_from_db()
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -113,6 +139,17 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)
 
+    def perform_update(self, serializer):
+        """Update user through the service layer."""
+        service = _get_user_service()
+        service.update_profile(serializer.instance.id, **serializer.validated_data)
+        serializer.instance.refresh_from_db()
+
+    def perform_destroy(self, instance):
+        """Delete user through the service layer."""
+        service = _get_user_service()
+        service.delete_user(instance.id)
+
 
 class ChangePasswordView(generics.UpdateAPIView):
     """
@@ -133,9 +170,17 @@ class ChangePasswordView(generics.UpdateAPIView):
     def update(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
 
-        # Generate new tokens since the password has changed
+        service = _get_user_service()
+        try:
+            service.change_password(
+                user_id=request.user.id,
+                old_password=serializer.validated_data["old_password"],
+                new_password=serializer.validated_data["new_password"],
+            )
+        except InvalidPasswordError:
+            raise ValidationError({"old_password": "Old password is incorrect."})
+
         refresh = RefreshToken.for_user(request.user)
 
         return Response(

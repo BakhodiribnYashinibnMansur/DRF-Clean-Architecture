@@ -6,7 +6,7 @@
 
 import django_filters
 
-from apps.books.infrastructure.models import Book
+from apps.books.infrastructure.models import GENRE_CHOICES, Book
 
 
 class BookFilter(django_filters.FilterSet):
@@ -33,7 +33,7 @@ class BookFilter(django_filters.FilterSet):
         help_text="Filter by author name (case-insensitive, partial match).",
     )
     genre = django_filters.ChoiceFilter(
-        choices=Book.Genre.choices,
+        choices=GENRE_CHOICES,
         help_text="Filter by genre (exact match).",
     )
     language = django_filters.CharFilter(

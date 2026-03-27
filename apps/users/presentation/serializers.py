@@ -47,13 +47,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"password_confirm": "Passwords do not match."}
             )
+        attrs.pop("password_confirm")
         return attrs
-
-    def create(self, validated_data):
-        """Create a new user using the custom manager's create_user method."""
-        # Remove password_confirm — it's not a model field
-        validated_data.pop("password_confirm")
-        return User.objects.create_user(**validated_data)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -146,13 +141,6 @@ class ChangePasswordSerializer(serializers.Serializer):
         help_text="Must match the new_password field.",
     )
 
-    def validate_old_password(self, value):
-        """Verify the old password is correct."""
-        user = self.context["request"].user
-        if not user.check_password(value):
-            raise serializers.ValidationError("Old password is incorrect.")
-        return value
-
     def validate(self, attrs):
         """Ensure new passwords match."""
         if attrs["new_password"] != attrs["new_password_confirm"]:
@@ -160,10 +148,3 @@ class ChangePasswordSerializer(serializers.Serializer):
                 {"new_password_confirm": "New passwords do not match."}
             )
         return attrs
-
-    def save(self, **kwargs):
-        """Set the new password on the user and save."""
-        user = self.context["request"].user
-        user.set_password(self.validated_data["new_password"])
-        user.save()
-        return user

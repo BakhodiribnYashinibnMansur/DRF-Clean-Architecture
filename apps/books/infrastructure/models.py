@@ -8,6 +8,27 @@ from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
 
+from apps.books.domain.entities import Genre as DomainGenre
+
+# Single source of truth: domain Genre enum.
+# Labels are an infrastructure concern (UI display).
+GENRE_CHOICES = [
+    (DomainGenre.FICTION.value, "Fiction"),
+    (DomainGenre.NON_FICTION.value, "Non-Fiction"),
+    (DomainGenre.SCIENCE.value, "Science"),
+    (DomainGenre.TECHNOLOGY.value, "Technology"),
+    (DomainGenre.HISTORY.value, "History"),
+    (DomainGenre.BIOGRAPHY.value, "Biography"),
+    (DomainGenre.PHILOSOPHY.value, "Philosophy"),
+    (DomainGenre.POETRY.value, "Poetry"),
+    (DomainGenre.ROMANCE.value, "Romance"),
+    (DomainGenre.THRILLER.value, "Thriller"),
+    (DomainGenre.FANTASY.value, "Fantasy"),
+    (DomainGenre.MYSTERY.value, "Mystery"),
+    (DomainGenre.SELF_HELP.value, "Self-Help"),
+    (DomainGenre.OTHER.value, "Other"),
+]
+
 
 class Book(models.Model):
     """
@@ -28,24 +49,6 @@ class Book(models.Model):
         created_at: Timestamp of record creation (auto-set).
         updated_at: Timestamp of last update (auto-set).
     """
-
-    class Genre(models.TextChoices):
-        """Predefined genre categories for books."""
-
-        FICTION = "fiction", "Fiction"
-        NON_FICTION = "non_fiction", "Non-Fiction"
-        SCIENCE = "science", "Science"
-        TECHNOLOGY = "technology", "Technology"
-        HISTORY = "history", "History"
-        BIOGRAPHY = "biography", "Biography"
-        PHILOSOPHY = "philosophy", "Philosophy"
-        POETRY = "poetry", "Poetry"
-        ROMANCE = "romance", "Romance"
-        THRILLER = "thriller", "Thriller"
-        FANTASY = "fantasy", "Fantasy"
-        MYSTERY = "mystery", "Mystery"
-        SELF_HELP = "self_help", "Self-Help"
-        OTHER = "other", "Other"
 
     # ISBN validator — accepts 10 or 13 digit ISBNs
     isbn_validator = RegexValidator(
@@ -68,8 +71,8 @@ class Book(models.Model):
     genre = models.CharField(
         "genre",
         max_length=20,
-        choices=Genre.choices,
-        default=Genre.OTHER,
+        choices=GENRE_CHOICES,
+        default=DomainGenre.OTHER.value,
         db_index=True,
     )
     description = models.TextField("description", blank=True, default="")

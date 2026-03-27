@@ -8,9 +8,7 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
-from apps.books.application.services import BookService
 from apps.books.infrastructure.models import Book
-from apps.books.infrastructure.repositories import DjangoBookRepository
 
 from .filters import BookFilter
 from .permissions import IsOwnerOrAdmin
@@ -74,17 +72,5 @@ class BookViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated(), IsOwnerOrAdmin()]
 
     def perform_create(self, serializer):
-        """
-        Create a book with business rule validation via the service layer.
-        The service checks ISBN uniqueness before the serializer persists.
-        """
-        # Validate business rules through the service layer
-        service = BookService(repository=DjangoBookRepository())
-        isbn = serializer.validated_data.get("isbn", "")
-        if service._repo.exists_by_isbn(isbn):
-            from rest_framework.exceptions import ValidationError
-
-            raise ValidationError({"isbn": f"A book with ISBN '{isbn}' already exists."})
-
-        # Persist through DRF serializer (sets created_by automatically)
+        """Create a book, assigning the current user as creator."""
         serializer.save(created_by=self.request.user)

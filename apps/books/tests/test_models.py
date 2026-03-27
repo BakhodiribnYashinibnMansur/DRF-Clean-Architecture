@@ -48,8 +48,10 @@ class TestBookModel:
         assert books[1] == book1
 
     def test_genre_choices(self):
-        """Genre TextChoices should contain expected values."""
-        genre_values = [choice[0] for choice in Book.Genre.choices]
+        """Genre choices should contain expected values from domain enum."""
+        from apps.books.infrastructure.models import GENRE_CHOICES
+
+        genre_values = [choice[0] for choice in GENRE_CHOICES]
         assert "fiction" in genre_values
         assert "technology" in genre_values
         assert "science" in genre_values
