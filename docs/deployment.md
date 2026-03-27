@@ -1,6 +1,6 @@
-# Deployment (Production ga Chiqarish)
+# Deployment (Production)
 
-**Loyihani production muhitga deploy qilish** uchun to'liq yo'riqnoma.
+**Complete guide** for deploying the project to a production environment.
 
 ## Docker Setup
 
@@ -14,14 +14,14 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Tizim kutubxonalari (PostgreSQL client)
+# System libraries (PostgreSQL client)
 RUN apt-get update && apt-get install -y \
     libpq-dev gcc \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml uv.lock ./
 
-# uv o'rnatish va dependencylar
+# Install uv and dependencies
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 RUN uv sync --frozen --no-dev
 
@@ -76,48 +76,48 @@ volumes:
   redis_data:
 ```
 
-### Ishga tushirish
+### Starting Up
 
 ```bash
-# .env faylini sozlash
+# Configure the .env file
 cp .env.example .env
-# .env ichidagi qiymatlarni production uchun o'zgartiring
+# Update the values in .env for production
 
-# Docker bilan ishga tushirish
+# Start with Docker
 docker-compose up -d --build
 
-# Migratsiyalar
+# Run migrations
 docker-compose exec web uv run python manage.py migrate --no-input
 
-# Superuser yaratish
+# Create superuser
 docker-compose exec web uv run python manage.py createsuperuser
 ```
 
 ## Environment Variables (Production)
 
-| O'zgaruvchi | Tavsif | Production misol |
-|------------|--------|-----------------|
-| `DJANGO_ENV` | Muhit nomi | `production` |
-| `SECRET_KEY` | Django maxfiy kalit (50+ belgi) | `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
-| `DEBUG` | Debug rejim | `False` |
-| `ALLOWED_HOSTS` | Ruxsat etilgan domenlar | `api.example.com,www.example.com` |
-| `DB_NAME` | PostgreSQL database nomi | `drf_production` |
-| `DB_USER` | PostgreSQL foydalanuvchi | `drf_prod_user` |
-| `DB_PASSWORD` | PostgreSQL parol | Kuchli parol |
-| `DB_HOST` | Database host | `db` (Docker) yoki RDS URL |
+| Variable | Description | Production example |
+|----------|-------------|-------------------|
+| `DJANGO_ENV` | Environment name | `production` |
+| `SECRET_KEY` | Django secret key (50+ characters) | `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"` |
+| `DEBUG` | Debug mode | `False` |
+| `ALLOWED_HOSTS` | Allowed domains | `api.example.com,www.example.com` |
+| `DB_NAME` | PostgreSQL database name | `drf_production` |
+| `DB_USER` | PostgreSQL user | `drf_prod_user` |
+| `DB_PASSWORD` | PostgreSQL password | Strong password |
+| `DB_HOST` | Database host | `db` (Docker) or RDS URL |
 | `DB_PORT` | Database port | `5432` |
-| `REDIS_URL` | Redis ulanish URL | `redis://redis:6379/0` |
-| `CORS_ALLOWED_ORIGINS` | Frontend URL lari | `https://app.example.com` |
+| `REDIS_URL` | Redis connection URL | `redis://redis:6379/0` |
+| `CORS_ALLOWED_ORIGINS` | Frontend URLs | `https://app.example.com` |
 
-> **Muhim:** `SECRET_KEY` ni hech qachon git ga commit qilmang. `.env` fayli `.gitignore` da bo'lishi kerak.
+> **Important:** Never commit `SECRET_KEY` to git. The `.env` file should be in `.gitignore`.
 
-## PostgreSQL Setup (Docker siz)
+## PostgreSQL Setup (without Docker)
 
 ```bash
-# PostgreSQL o'rnatish (Ubuntu/Debian)
+# Install PostgreSQL (Ubuntu/Debian)
 sudo apt install postgresql postgresql-contrib
 
-# Database va user yaratish
+# Create database and user
 sudo -u postgres psql
 CREATE DATABASE drf_production;
 CREATE USER drf_prod_user WITH PASSWORD 'your_secure_password';
@@ -127,35 +127,35 @@ ALTER ROLE drf_prod_user SET timezone TO 'Asia/Tashkent';
 GRANT ALL PRIVILEGES ON DATABASE drf_production TO drf_prod_user;
 \q
 
-# Ulanishni tekshirish
+# Test the connection
 psql -U drf_prod_user -d drf_production -h localhost
 ```
 
-## Redis Setup (Docker siz)
+## Redis Setup (without Docker)
 
 ```bash
-# O'rnatish
+# Install
 sudo apt install redis-server
 
-# Ishga tushirish
+# Start
 sudo systemctl start redis
 sudo systemctl enable redis
 
-# Tekshirish
-redis-cli ping    # PONG javob berishi kerak
+# Test
+redis-cli ping    # Should respond with PONG
 ```
 
-Loyihada Redis ikki maqsadda ishlatiladi:
-- **Cache:** Tez-tez so'raladigan ma'lumotlarni keshlash
-- **Sessions:** Foydalanuvchi sessiyalarini saqlash
+Redis is used for two purposes in the project:
+- **Cache:** Caching frequently requested data
+- **Sessions:** Storing user sessions
 
-## Gunicorn Konfiguratsiyasi
+## Gunicorn Configuration
 
 ```bash
-# Oddiy ishga tushirish
+# Simple startup
 gunicorn config.wsgi:application --bind 0.0.0.0:8000
 
-# Production uchun tavsiya
+# Recommended for production
 gunicorn config.wsgi:application \
   --bind 0.0.0.0:8000 \
   --workers 3 \
@@ -164,29 +164,29 @@ gunicorn config.wsgi:application \
   --error-logfile /var/log/gunicorn/error.log
 ```
 
-**Workers soni:** `(2 * CPU_CORES) + 1` formulasi bilan hisoblang.
-Masalan, 2 yadroli server uchun: `(2 * 2) + 1 = 5` worker.
+**Number of workers:** Calculate using the formula `(2 * CPU_CORES) + 1`.
+For example, for a 2-core server: `(2 * 2) + 1 = 5` workers.
 
 ## Security Checklist
 
-Production muhitda quyidagi sozlamalar `config/settings/production.py` da avtomatik yoqiladi:
+The following settings are automatically enabled in production via `config/settings/production.py`:
 
-| Sozlama | Qiymat | Tavsif |
-|---------|--------|--------|
-| `DEBUG` | `False` | Debug rejim o'chirilgan |
-| `SECURE_SSL_REDIRECT` | `True` | HTTP → HTTPS ga yo'naltirish |
-| `SECURE_HSTS_SECONDS` | `31536000` | HSTS — 1 yil |
-| `SECURE_HSTS_INCLUDE_SUBDOMAINS` | `True` | Subdomenlar ham HTTPS |
-| `SESSION_COOKIE_SECURE` | `True` | Session cookie faqat HTTPS |
-| `CSRF_COOKIE_SECURE` | `True` | CSRF cookie faqat HTTPS |
-| `X_FRAME_OPTIONS` | `DENY` | Clickjacking himoyasi |
-| `CORS_ALLOW_ALL_ORIGINS` | `False` | Faqat belgilangan originlar |
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `DEBUG` | `False` | Debug mode disabled |
+| `SECURE_SSL_REDIRECT` | `True` | HTTP → HTTPS redirect |
+| `SECURE_HSTS_SECONDS` | `31536000` | HSTS — 1 year |
+| `SECURE_HSTS_INCLUDE_SUBDOMAINS` | `True` | Subdomains also use HTTPS |
+| `SESSION_COOKIE_SECURE` | `True` | Session cookie HTTPS only |
+| `CSRF_COOKIE_SECURE` | `True` | CSRF cookie HTTPS only |
+| `X_FRAME_OPTIONS` | `DENY` | Clickjacking protection |
+| `CORS_ALLOW_ALL_ORIGINS` | `False` | Only specified origins allowed |
 
-> `DJANGO_ENV=production` o'rnatilganda bu sozlamalar avtomatik faollashadi.
+> These settings are automatically activated when `DJANGO_ENV=production` is set.
 
 ## CI/CD Pipeline (GitHub Actions)
 
-`.github/workflows/ci.yml` misoli:
+`.github/workflows/ci.yml` example:
 
 ```yaml
 name: CI
@@ -229,16 +229,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: uv o'rnatish
+      - name: Install uv
         uses: astral-sh/setup-uv@v4
 
-      - name: Dependencies o'rnatish
+      - name: Install dependencies
         run: uv sync --all-extras
 
-      - name: Lint tekshirish
+      - name: Lint check
         run: uv run ruff check apps/
 
-      - name: Testlarni ishga tushirish
+      - name: Run tests
         env:
           DJANGO_ENV: development
           SECRET_KEY: test-secret-key-for-ci
@@ -251,17 +251,17 @@ jobs:
         run: uv run pytest -v --cov=apps
 ```
 
-## Static Fayllar
+## Static Files
 
 ```bash
 # Collect static
 uv run python manage.py collectstatic --noinput
 
-# Static fayllar STATIC_ROOT = BASE_DIR / "staticfiles" ga yig'iladi
-# Nginx yoki CDN orqali xizmat ko'rsating
+# Static files are collected to STATIC_ROOT = BASE_DIR / "staticfiles"
+# Serve them via Nginx or CDN
 ```
 
-Nginx misoli:
+Nginx example:
 ```nginx
 location /static/ {
     alias /app/staticfiles/;
@@ -271,15 +271,15 @@ location /static/ {
 ## Migration (Production)
 
 ```bash
-# Docker bilan
+# With Docker
 docker-compose exec web uv run python manage.py migrate --no-input
 
-# Docker siz
+# Without Docker
 DJANGO_ENV=production uv run python manage.py migrate --no-input
 ```
 
-> **Muhim:** Production da `makemigrations` ishlatmang — faqat `migrate`.
-> Migration fayllarini development da yaratib, git orqali deploy qiling.
+> **Important:** Don't run `makemigrations` in production — only `migrate`.
+> Create migration files in development and deploy them via git.
 
 ## Backup
 

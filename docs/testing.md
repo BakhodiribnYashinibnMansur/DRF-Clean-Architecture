@@ -1,26 +1,26 @@
-# Test Strategiyasi
+# Test Strategy
 
-**143 ta test**, barcha o'tadi. Har bir app da **6 ta test fayli** — layer bo'yicha ajratilgan.
+**143 tests**, all passing. Each app has **6 test files** — separated by layer.
 
-## Umumiy Statistika
+## Overall Statistics
 
-| Kategoriya | Testlar soni | DB kerakmi? |
-|-----------|-------------|-------------|
-| Domain tests | 21 | Yo'q |
-| Service tests | 20 | Yo'q |
-| Repository tests | 24 | Ha |
-| Model tests | 19 | Ha |
-| Serializer tests | 21 | Ha |
-| View tests | 38 | Ha |
-| **Jami** | **143** | |
+| Category | Test count | DB required? |
+|----------|-----------|-------------|
+| Domain tests | 21 | No |
+| Service tests | 20 | No |
+| Repository tests | 24 | Yes |
+| Model tests | 19 | Yes |
+| Serializer tests | 21 | Yes |
+| View tests | 38 | Yes |
+| **Total** | **143** | |
 
-## Layer Bo'yicha Test Strategiyasi
+## Test Strategy by Layer
 
 ### 1. Domain Tests (`test_domain.py`)
 
-**Nima test qilinadi:** Entity yaratish, property'lar, enum qiymatlari, exceptionlar.
+**What's tested:** Entity creation, properties, enum values, exceptions.
 
-**DB:** kerak emas | **Mock:** kerak emas | **Tezligi:** eng tez
+**DB:** not required | **Mock:** not required | **Speed:** fastest
 
 ```python
 def test_book_entity_default_values():
@@ -41,14 +41,14 @@ def test_genre_enum_values():
 
 def test_book_not_found_error():
     with pytest.raises(BookNotFoundError):
-        raise BookNotFoundError("Kitob topilmadi")
+        raise BookNotFoundError("Book not found")
 ```
 
 ### 2. Service Tests (`test_services.py`)
 
-**Nima test qilinadi:** Biznes logika — yaratish, yangilash, o'chirish, validatsiya.
+**What's tested:** Business logic — create, update, delete, validation.
 
-**DB:** kerak emas | **Mock:** Ha (repository) | **Tezligi:** tez
+**DB:** not required | **Mock:** Yes (repository) | **Speed:** fast
 
 ```python
 @pytest.fixture
@@ -78,9 +78,9 @@ def test_create_book_duplicate_isbn(service, mock_repo, sample_entity):
 
 ### 3. Repository Tests (`test_repositories.py`)
 
-**Nima test qilinadi:** ORM operatsiyalari, entity mapping, DB integratsiya.
+**What's tested:** ORM operations, entity mapping, DB integration.
 
-**DB:** ha | **Mock:** yo'q | **Tezligi:** o'rtacha
+**DB:** yes | **Mock:** no | **Speed:** medium
 
 ```python
 @pytest.mark.django_db
@@ -98,9 +98,9 @@ def test_create_and_get_book(book_data):
 
 ### 4. Model Tests (`test_models.py`)
 
-**Nima test qilinadi:** Django model validatsiya, `__str__`, Meta options, constraintlar.
+**What's tested:** Django model validation, `__str__`, Meta options, constraints.
 
-**DB:** ha | **Mock:** yo'q
+**DB:** yes | **Mock:** no
 
 ```python
 @pytest.mark.django_db
@@ -116,9 +116,9 @@ def test_isbn_unique_constraint(user, book_data):
 
 ### 5. Serializer Tests (`test_serializers.py`)
 
-**Nima test qilinadi:** DRF data validatsiya, field presence, read-only fields.
+**What's tested:** DRF data validation, field presence, read-only fields.
 
-**DB:** ha (model instance kerak) | **Mock:** yo'q
+**DB:** yes (model instance needed) | **Mock:** no
 
 ```python
 @pytest.mark.django_db
@@ -137,9 +137,9 @@ def test_registration_password_mismatch():
 
 ### 6. View Tests (`test_views.py`)
 
-**Nima test qilinadi:** HTTP endpointlar, permissionlar, filtrlash, pagination.
+**What's tested:** HTTP endpoints, permissions, filtering, pagination.
 
-**DB:** ha | **Mock:** yo'q | **Tezligi:** eng sekin (to'liq HTTP cycle)
+**DB:** yes | **Mock:** no | **Speed:** slowest (full HTTP cycle)
 
 ```python
 @pytest.mark.django_db
@@ -155,7 +155,7 @@ def test_create_book_unauthenticated(api_client, book_data):
 
 @pytest.mark.django_db
 def test_update_book_not_owner(auth_client, book, second_user):
-    # Boshqa userning kitobini o'zgartirish — 403
+    # Trying to modify another user's book — 403
     book.created_by = second_user
     book.save()
     response = auth_client.patch(
@@ -167,75 +167,75 @@ def test_update_book_not_owner(auth_client, book, second_user):
 
 ## Shared Fixtures (`conftest.py`)
 
-| Fixture | Qaytaradi | Tavsif |
-|---------|----------|--------|
-| `api_client` | `APIClient` | Autentifikatsiyasiz API client |
-| `user_data` | `dict` | Valid user ma'lumotlari |
-| `create_user` | factory function | User yaratish uchun factory |
-| `user` | `CustomUser` | Oddiy (non-admin) foydalanuvchi |
-| `admin_user` | `CustomUser` | Admin foydalanuvchi (`is_staff=True`) |
-| `auth_client` | `APIClient` | Oddiy user JWT tokeni bilan |
-| `admin_client` | `APIClient` | Admin JWT tokeni bilan |
-| `book_data` | `dict` | Valid kitob ma'lumotlari |
-| `book` | `Book` | DB dagi kitob (user yaratgan) |
-| `second_user` | `CustomUser` | Permission test uchun ikkinchi user |
+| Fixture | Returns | Description |
+|---------|---------|-------------|
+| `api_client` | `APIClient` | Unauthenticated API client |
+| `user_data` | `dict` | Valid user data |
+| `create_user` | factory function | Factory for creating users |
+| `user` | `CustomUser` | Regular (non-admin) user |
+| `admin_user` | `CustomUser` | Admin user (`is_staff=True`) |
+| `auth_client` | `APIClient` | Regular user with JWT token |
+| `admin_client` | `APIClient` | Admin with JWT token |
+| `book_data` | `dict` | Valid book data |
+| `book` | `Book` | Book in DB (created by user) |
+| `second_user` | `CustomUser` | Second user for permission tests |
 
-## Mock vs Real DB Qoidalari
+## Mock vs Real DB Rules
 
-| Layer | Mock | Real DB | Sabab |
-|-------|------|---------|-------|
-| Domain | Yo'q | Yo'q | Pure Python, framework yo'q |
-| Service | Ha (repository) | Yo'q | Biznes logikani izolyatsiya qilish |
-| Repository | Yo'q | Ha | ORM integratsiyani tekshirish |
-| Model | Yo'q | Ha | Django model xatti-harakati |
-| Serializer | Yo'q | Ha | Validation + model instance |
-| View | Yo'q | Ha | To'liq HTTP cycle |
+| Layer | Mock | Real DB | Reason |
+|-------|------|---------|--------|
+| Domain | No | No | Pure Python, no framework |
+| Service | Yes (repository) | No | Isolate business logic |
+| Repository | No | Yes | Verify ORM integration |
+| Model | No | Yes | Django model behavior |
+| Serializer | No | Yes | Validation + model instance |
+| View | No | Yes | Full HTTP cycle |
 
-> **Qoida:** Agar layerda Django ORM ishlatilsa — real DB kerak.
-> Agar pure Python yoki mock bilan ishlasa — DB kerak emas.
+> **Rule:** If the layer uses Django ORM — real DB is required.
+> If it works with pure Python or mocks — no DB needed.
 
-## Coverage Maqsadlari
+## Coverage Goals
 
-- **Umumiy:** 90%+ coverage
-- **Domain/Service:** 100% (kichik, muhim kod)
-- **View testlari:** barcha permission kombinatsiyalari qamrab olinishi kerak
+- **Overall:** 90%+ coverage
+- **Domain/Service:** 100% (small, critical code)
+- **View tests:** all permission combinations should be covered
 
-Coverage tekshirish:
+Check coverage:
 ```bash
 make test-cov    # pytest --cov=apps --cov-report=term-missing
 ```
 
-## Test Buyruqlari
+## Test Commands
 
 ```bash
-# Barcha testlar
+# All tests
 make test                                        # pytest -v
 
-# Faqat bitta app testlari
+# Only one app's tests
 pytest apps/books/tests/ -v
 pytest apps/users/tests/ -v
 
-# Faqat bitta test fayli
+# Only one test file
 pytest apps/books/tests/test_services.py -v
 
-# Nomi bo'yicha filtrlash
+# Filter by name
 pytest -k "test_create" -v
 
-# Faqat domain testlari (DB siz, eng tez)
+# Only domain tests (no DB, fastest)
 pytest -k "test_domain" -v
 
-# Coverage bilan
+# With coverage
 pytest --cov=apps --cov-report=term-missing -v
 
-# Batafsil xato ma'lumoti
+# Detailed error info
 pytest -v --tb=long
 ```
 
-## Yangi Test Yozish Qoidalari
+## Rules for Writing New Tests
 
-1. Har bir layer uchun **alohida test fayli** — `test_<layer>.py`
-2. Har bir test uchun kamida **happy path + xato holat**
-3. Domain va Service testlari **DB ishlatmasligi** kerak
-4. `@pytest.mark.django_db` faqat DB kerak bo'lganda qo'shiladi
-5. `conftest.py` dagi shared fixturelardan foydalaning
-6. Test nomlarida nima test qilinayotgani aniq bo'lsin: `test_create_book_duplicate_isbn`
+1. A **separate test file** for each layer — `test_<layer>.py`
+2. At least **happy path + error case** for each test
+3. Domain and Service tests **must not use DB**
+4. `@pytest.mark.django_db` only when DB is needed
+5. Use shared fixtures from `conftest.py`
+6. Test names should clearly state what is being tested: `test_create_book_duplicate_isbn`

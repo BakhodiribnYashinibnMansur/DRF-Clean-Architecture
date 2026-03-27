@@ -1,16 +1,16 @@
-# Clean Architecture — Chuqur Tushuncha
+# Clean Architecture — Deep Dive
 
-**Loyiha arxitekturasi** — Robert C. Martin (Uncle Bob) tomonidan taklif qilingan Clean Architecture asosida qurilgan.
+**Project architecture** — built on Clean Architecture proposed by Robert C. Martin (Uncle Bob).
 
-## Clean Architecture Nima?
+## What is Clean Architecture?
 
-Clean Architecture — dastur kodini **layerlarga** (qatlamlarga) ajratib, har bir layerni
-boshqalaridan **mustaqil** qilish tamoyili. Asosiy qoida:
+Clean Architecture is a principle of separating application code into **layers**, making each layer
+**independent** from the others. The fundamental rule:
 
-> Ichki layerlar tashqi layerlardan **hech qachon** import qilmaydi.
-> Bog'liqlik faqat **tashqaridan ichkariga** yo'naladi.
+> Inner layers **never** import from outer layers.
+> Dependencies flow only **from outside to inside**.
 
-## Layer Diagrammasi
+## Layer Diagram
 
 ```
 +------------------------------------------------------+
@@ -27,51 +27,51 @@ boshqalaridan **mustaqil** qilish tamoyili. Asosiy qoida:
 +------------------------------------------------------+
 ```
 
-Bog'liqlik yo'nalishi:
+Dependency direction:
 
 ```
 Presentation → Infrastructure → Application → Domain
      |               |               |            |
-  tashqi          tashqi          ichki        eng ichki
+  outermost       outer           inner       innermost
 ```
 
-## Layer Vazifalari va Chegaralari
+## Layer Responsibilities and Boundaries
 
-### 1. Domain Layer (eng ichki)
+### 1. Domain Layer (innermost)
 
-**Vazifasi:** "Kitob nima?", "Foydalanuvchi nima?" degan savollarga javob beradi.
+**Purpose:** Answers the questions "What is a Book?", "What is a User?"
 
-| Fayl | Vazifa |
-|------|--------|
+| File | Purpose |
+|------|---------|
 | `entities.py` | `BookEntity`, `UserEntity` — pure Python dataclass |
-| `exceptions.py` | `BookNotFoundError`, `DuplicateISBNError`, `UserNotFoundError` va boshqalar |
+| `exceptions.py` | `BookNotFoundError`, `DuplicateISBNError`, `UserNotFoundError`, etc. |
 
-**Import qoidasi:**
+**Import rule:**
 ```
-domain/ → hech narsadan import qilmaydi
-         (faqat Python stdlib: dataclasses, datetime, enum, typing)
+domain/ → imports nothing
+         (only Python stdlib: dataclasses, datetime, enum, typing)
 ```
 
-**Nima uchun kerak:**
-1. Frameworkdan to'liq mustaqil — Django, Flask, FastAPI farqi yo'q
-2. Test qilish eng oson — DB kerak emas, mock kerak emas
-3. Barcha biznes tushunchalari bir joyda jamlangan
+**Why it's needed:**
+1. Fully independent of the framework — doesn't matter if it's Django, Flask, or FastAPI
+2. Easiest to test — no DB needed, no mocks needed
+3. All business concepts are gathered in one place
 
 ### 2. Application Layer
 
-**Vazifasi:** "Kitob qanday yaratiladi?", "Biznes qoidalari nima?" degan savollarga javob beradi.
+**Purpose:** Answers "How is a book created?", "What are the business rules?"
 
-| Fayl | Vazifa |
-|------|--------|
-| `interfaces.py` | `AbstractBookRepository`, `AbstractUserRepository` — ABC interfeys |
-| `services.py` | `BookService`, `UserService` — biznes logika |
+| File | Purpose |
+|------|---------|
+| `interfaces.py` | `AbstractBookRepository`, `AbstractUserRepository` — ABC interface |
+| `services.py` | `BookService`, `UserService` — business logic |
 
-**Import qoidasi:**
+**Import rule:**
 ```
-application/ → faqat domain/ dan import qiladi
+application/ → imports only from domain/
 ```
 
-**Dependency Injection:** Service o'zi repository yaratmaydi — tashqaridan oladi:
+**Dependency Injection:** The service doesn't create the repository itself — it receives it from outside:
 ```python
 class BookService:
     def __init__(self, repository: AbstractBookRepository):
@@ -80,21 +80,21 @@ class BookService:
 
 ### 3. Infrastructure Layer
 
-**Vazifasi:** "Ma'lumot qanday saqlanadi?" degan savolga javob beradi.
+**Purpose:** Answers "How is data stored?"
 
-| Fayl | Vazifa |
-|------|--------|
-| `models.py` | `Book`, `CustomUser` — Django ORM modellari |
-| `repositories.py` | `DjangoBookRepository`, `DjangoUserRepository` — konkret realizatsiya |
-| `managers.py` | `CustomUserManager` — faqat users app da |
+| File | Purpose |
+|------|---------|
+| `models.py` | `Book`, `CustomUser` — Django ORM models |
+| `repositories.py` | `DjangoBookRepository`, `DjangoUserRepository` — concrete implementation |
+| `managers.py` | `CustomUserManager` — only in users app |
 
-**Import qoidasi:**
+**Import rule:**
 ```
-infrastructure/ → domain/ va application/ dan import qiladi
-                  Django ORM ishlatadi
+infrastructure/ → imports from domain/ and application/
+                  uses Django ORM
 ```
 
-**Entity Mapping:** Repository domain entity va ORM model o'rtasida konvertatsiya qiladi:
+**Entity Mapping:** The repository converts between domain entity and ORM model:
 ```python
 # ORM model → Domain Entity
 def _to_entity(self, book: Book) -> BookEntity:
@@ -107,26 +107,26 @@ def _to_entity(self, book: Book) -> BookEntity:
     )
 ```
 
-### 4. Presentation Layer (eng tashqi)
+### 4. Presentation Layer (outermost)
 
-**Vazifasi:** "API qanday ishlaydi?" degan savolga javob beradi.
+**Purpose:** Answers "How does the API work?"
 
-| Fayl | Vazifa |
-|------|--------|
-| `views.py` | `BookViewSet`, `RegisterView`, `UserProfileView` — API endpointlar |
-| `serializers.py` | `BookListSerializer`, `BookDetailSerializer` — ma'lumot validatsiya |
-| `permissions.py` | `IsOwnerOrAdmin`, `IsAdminOrSelf` — ruxsatlar |
-| `filters.py` | `BookFilter` — 8 ta filter (faqat books) |
+| File | Purpose |
+|------|---------|
+| `views.py` | `BookViewSet`, `RegisterView`, `UserProfileView` — API endpoints |
+| `serializers.py` | `BookListSerializer`, `BookDetailSerializer` — data validation |
+| `permissions.py` | `IsOwnerOrAdmin`, `IsAdminOrSelf` — permissions |
+| `filters.py` | `BookFilter` — 8 filters (books only) |
 | `urls.py` | URL routing (DefaultRouter) |
 
-**Import qoidasi:**
+**Import rule:**
 ```
-presentation/ → barcha layerlardan import qilishi mumkin
+presentation/ → can import from all layers
 ```
 
-## Request Lifecycle (So'rov Hayot Sikli)
+## Request Lifecycle
 
-Kitob yaratish misoli (`POST /api/books/`):
+Book creation example (`POST /api/books/`):
 
 ```
 HTTP Request (POST /api/books/)
@@ -135,84 +135,80 @@ HTTP Request (POST /api/books/)
 config/urls.py → apps/books/presentation/urls.py
         |
         v
-BookViewSet.create() — permission tekshiruvi:
-  - IsAuthenticated() → foydalanuvchi tizimga kirganmi?
+BookViewSet.create() — permission check:
+  - IsAuthenticated() → is the user logged in?
         |
         v
-BookDetailSerializer.is_valid() — ma'lumot validatsiya:
-  - title, author, isbn, published_date, page_count majburiy
-  - isbn format: 10 yoki 13 raqam
+BookDetailSerializer.is_valid() — data validation:
+  - title, author, isbn, published_date, page_count required
+  - isbn format: 10 or 13 digits
         |
         v
-BookViewSet.perform_create() — biznes qoidalar:
-  - BookService → ISBN allaqachon mavjudmi? (DuplicateISBNError)
+BookViewSet.perform_create() — business rules:
+  - BookService → does the ISBN already exist? (DuplicateISBNError)
   - serializer.save(created_by=request.user)
         |
         v
 Book.objects.create() — Django ORM → PostgreSQL
         |
         v
-BookDetailSerializer(book) — response tayyorlash
+BookDetailSerializer(book) — prepare response
         |
         v
 HTTP Response (201 Created + JSON)
 ```
 
-## Data Flow (Ma'lumot Oqimi)
+## Data Flow
 
-Kitob yaratishda har bir bosqichdagi ma'lumot formati:
+Data format at each stage during book creation:
 
-| Bosqich | Ma'lumot formati |
-|---------|-----------------|
+| Stage | Data format |
+|-------|-------------|
 | HTTP Request | JSON: `{"title": "...", "isbn": "...", ...}` |
 | Serializer validation | Python dict: `validated_data` |
 | Service layer | `BookEntity(title="...", isbn="...", ...)` |
 | Repository | `Book(title="...", isbn="...", ...)` — ORM model |
-| PostgreSQL | SQL INSERT — `books_book` jadvaliga yoziladi |
+| PostgreSQL | SQL INSERT — written to `books_book` table |
 | Response | JSON: `{"id": 1, "title": "...", "created_by": {...}, ...}` |
 
-## Dependency Injection Tushuntirishi
+## Dependency Injection Explained
 
-**Muammo:** Agar service to'g'ridan-to'g'ri `DjangoBookRepository` ishlatsa,
-uni test qilishda **haqiqiy DB** kerak bo'ladi.
+**Problem:** If the service directly uses `DjangoBookRepository`, testing it would require a **real DB**.
 
-**Yechim:** Abstraktsiya orqali bog'lash:
+**Solution:** Bind through abstraction:
 
 ```python
-# View da — haqiqiy repository
+# In view — real repository
 service = BookService(repository=DjangoBookRepository())
 
-# Test da — mock repository
+# In test — mock repository
 mock_repo = MagicMock(spec=AbstractBookRepository)
 service = BookService(repository=mock_repo)
 ```
 
-Bu yondashuv **SOLID** tamoyilining **D** harfi — Dependency Inversion Principle.
+This approach is the **D** in **SOLID** — Dependency Inversion Principle.
 
-## ADR: Nima Uchun Clean Architecture?
+## ADR: Why Clean Architecture?
 
-**Muammo:** An'anaviy Django loyihalarda "fat views" yoki "fat models" antipattern
-paydo bo'ladi — biznes logika views.py yoki models.py ichida chalkashib ketadi.
+**Problem:** In traditional Django projects, "fat views" or "fat models" antipatterns emerge — business logic gets tangled inside views.py or models.py.
 
-**Qaror:** Clean Architecture 4-layer pattern qo'llanildi.
+**Decision:** The Clean Architecture 4-layer pattern was adopted.
 
-| Xususiyat | An'anaviy Django | Clean Architecture |
-|-----------|-----------------|-------------------|
-| Biznes logika joyi | views.py yoki models.py | services.py |
-| Test tezligi | Sekin (har doim DB kerak) | Tez (domain/service DB siz) |
-| Framework bog'liqligi | Yuqori | Past (domain layer mustaqil) |
-| Kodni almashtirish | Qiyin | Oson (interface orqali) |
-| Yangi dasturchi uchun | Murakkab | Strukturali, tushunarli |
+| Feature | Traditional Django | Clean Architecture |
+|---------|-------------------|-------------------|
+| Business logic location | views.py or models.py | services.py |
+| Test speed | Slow (always needs DB) | Fast (domain/service without DB) |
+| Framework coupling | High | Low (domain layer is independent) |
+| Code replaceability | Difficult | Easy (through interfaces) |
+| For new developers | Complex | Structured, understandable |
 
-**Natija:** Har bir layer mustaqil test qilinadi. Domain va service testlari
-**database ishlatmaydi** — tezkor va ishonchli.
+**Result:** Each layer is tested independently. Domain and service tests **don't use a database** — fast and reliable.
 
-## Proxy Model Mexanizmi
+## Proxy Model Mechanism
 
-Django modellarni topish uchun `apps/<app>/models.py` faylini kutadi.
-Lekin bizning modellar `infrastructure/models.py` da joylashgan.
+Django expects to find models in the `apps/<app>/models.py` file. But our models are located in `infrastructure/models.py`.
 
-**Yechim:** Root-level `models.py` faqat re-export qiladi:
+**Solution:** Root-level `models.py` simply re-exports:
 
 ```python
 # apps/books/models.py (proxy)
@@ -221,17 +217,16 @@ from apps.books.infrastructure.models import Book
 __all__ = ["Book"]
 ```
 
-Bu Django'ning model discovery mexanizmini buzmasdan, Clean Architecture
-strukturasini saqlash imkonini beradi.
+This preserves the Clean Architecture structure without breaking Django's model discovery mechanism.
 
-## Papka Strukturasi
+## Folder Structure
 
 ```
 apps/books/
-├── domain/              # Pure Python — framework yo'q
+├── domain/              # Pure Python — no framework
 │   ├── entities.py      # BookEntity dataclass
 │   └── exceptions.py    # BookNotFoundError, DuplicateISBNError
-├── application/         # Biznes logika
+├── application/         # Business logic
 │   ├── interfaces.py    # AbstractBookRepository (ABC)
 │   └── services.py      # BookService
 ├── infrastructure/      # Django ORM
@@ -243,9 +238,9 @@ apps/books/
 │   ├── permissions.py   # IsOwnerOrAdmin
 │   ├── filters.py       # BookFilter
 │   └── urls.py          # Router
-├── tests/               # 6 ta test fayli
+├── tests/               # 6 test files
 ├── models.py            # Proxy → infrastructure/models.py
 └── admin.py             # Django admin
 ```
 
-> Batafsil ma'lumot uchun har bir layer ichidagi `README.md` ni o'qing.
+> For more details, read the `README.md` inside each layer.

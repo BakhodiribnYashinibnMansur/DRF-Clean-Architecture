@@ -1,79 +1,79 @@
-# Loyihaga Hissa Qo'shish (Contributing)
+# Contributing
 
-**Loyihaga qanday hissa qo'shish mumkin** — qoidalar va yo'riqnomalar.
+**How to contribute to the project** — rules and guidelines.
 
-## Loyihani Lokal Ishga Tushirish
+## Running the Project Locally
 
 ```bash
-# 1. Repository ni clone qiling
+# 1. Clone the repository
 git clone <repository-url>
 cd DRF
 
-# 2. .env faylini yarating
+# 2. Create the .env file
 cp .env.example .env
-# .env ichidagi qiymatlarni o'zgartiring
+# Edit the values in .env
 
-# 3. Dependencylarni o'rnating
+# 3. Install dependencies
 uv sync --all-extras
 
-# 4. Database migratsiyalari
+# 4. Database migrations
 make migrate
 
-# 5. Superuser yarating
+# 5. Create superuser
 make superuser
 
-# 6. Serverni ishga tushiring
+# 6. Start the server
 make run
 ```
 
-## Git Branching Strategiyasi
+## Git Branching Strategy
 
-| Branch | Vazifasi |
+| Branch | Purpose |
 |--------|---------|
-| `main` | Production-ready kod. To'g'ridan-to'g'ri push qilish taqiqlangan |
-| `develop` | Integration branch. Barcha feature'lar bu yerga merge qilinadi |
-| `feature/*` | Yangi funksionallik. Masalan: `feature/add-category-filter` |
-| `fix/*` | Xato tuzatish. Masalan: `fix/isbn-validation-error` |
-| `docs/*` | Dokumentatsiya. Masalan: `docs/add-api-examples` |
+| `main` | Production-ready code. Direct push is prohibited |
+| `develop` | Integration branch. All features are merged here |
+| `feature/*` | New functionality. Example: `feature/add-category-filter` |
+| `fix/*` | Bug fixes. Example: `fix/isbn-validation-error` |
+| `docs/*` | Documentation. Example: `docs/add-api-examples` |
 
-### Branch yaratish
+### Creating a Branch
 
 ```bash
-# develop dan yangi branch
+# New branch from develop
 git checkout develop
 git pull origin develop
 git checkout -b feature/your-feature-name
 ```
 
-## Commit Konventsiyalari
+## Commit Conventions
 
 ### Format
 
 ```
-type(scope): qisqa tavsif
+type(scope): short description
 ```
 
-### Commit turlari
+### Commit Types
 
-| Type | Tavsif | Misol |
-|------|--------|-------|
-| `feat` | Yangi funksionallik | `feat(books): add genre filtering endpoint` |
-| `fix` | Xato tuzatish | `fix(users): validate email before registration` |
-| `refactor` | Kod qayta yozish (funksionallik o'zgarmaydi) | `refactor(books): move validation to service layer` |
-| `test` | Test qo'shish yoki o'zgartirish | `test(users): add password change edge cases` |
-| `docs` | Dokumentatsiya | `docs: add API examples` |
-| `chore` | Texnik ishlar (config, dependency) | `chore: update pyproject.toml` |
+| Type | Description | Example |
+|------|-------------|---------|
+| `feat` | New functionality | `feat(books): add genre filtering endpoint` |
+| `fix` | Bug fix | `fix(users): validate email before registration` |
+| `refactor` | Code rewrite (no functionality change) | `refactor(books): move validation to service layer` |
+| `test` | Add or modify tests | `test(users): add password change edge cases` |
+| `docs` | Documentation | `docs: add API examples` |
+| `chore` | Technical tasks (config, dependencies) | `chore: update pyproject.toml` |
 
-### Scope turlari
+### Scope Types
 
-| Scope | Tavsif |
-|-------|--------|
+| Scope | Description |
+|-------|-------------|
 | `books` | Books app |
 | `users` | Users app |
-| `config` | Konfiguratsiya (settings, urls) |
-| `docs` | Dokumentatsiya |
+| `config` | Configuration (settings, urls) |
+| `docs` | Documentation |
 
-### Misollar
+### Examples
 
 ```bash
 git commit -m "feat(books): add published_year filter"
@@ -82,33 +82,33 @@ git commit -m "test(books): add ISBN uniqueness test cases"
 git commit -m "docs: update API endpoint documentation"
 ```
 
-## Pull Request Qoidalari
+## Pull Request Rules
 
-### PR yaratish
+### Creating a PR
 
-1. Branch nomini tushunarli qiling (`feature/add-genre-filter`, `fix/isbn-bug`)
-2. PR tavsifida quyidagilarni yozing:
-   - **Nima o'zgartirildi** — qisqacha tavsif
-   - **Nima uchun** — muammo yoki talab
-   - **Qanday test qilindi** — testlar, qo'lda tekshirish
+1. Use a clear branch name (`feature/add-genre-filter`, `fix/isbn-bug`)
+2. Include the following in the PR description:
+   - **What was changed** — brief description
+   - **Why** — the problem or requirement
+   - **How it was tested** — tests, manual verification
 
-### PR merge qoidalari
+### PR Merge Rules
 
-- Kamida **1 ta approval** kerak
-- Barcha **testlar o'tishi** shart (`pytest`)
-- **Lint tekshiruvi** o'tishi shart (`ruff check apps/`)
-- Merge conflict bo'lmasligi kerak
+- At least **1 approval** required
+- All **tests must pass** (`pytest`)
+- **Lint check** must pass (`ruff check apps/`)
+- No merge conflicts
 
-## Kod Yozish Standartlari
+## Code Standards
 
 ### Python Style
 
-- **Linter:** `ruff` (`make lint` bilan tekshiring)
-- **Formatter:** `ruff format` yoki loyiha standartlari
-- **Type hints:** domain va application layerlarda majburiy
-- **Docstring:** har bir class va public method uchun
+- **Linter:** `ruff` (check with `make lint`)
+- **Formatter:** `ruff format` or project standards
+- **Type hints:** required in domain and application layers
+- **Docstring:** for every class and public method
 
-### Import tartibi
+### Import Order
 
 ```python
 # 1. Python stdlib
@@ -124,33 +124,33 @@ from apps.books.domain.entities import BookEntity
 from apps.books.application.services import BookService
 ```
 
-## Clean Architecture Qoidalari
+## Clean Architecture Rules
 
-### Layer bog'liqliklari
+### Layer Dependencies
 
 ```
-Domain          ← hech narsadan import qilmaydi
-Application     ← faqat Domain dan
-Infrastructure  ← Domain va Application dan
-Presentation    ← barcha layerlardan
+Domain          ← imports nothing
+Application     ← only from Domain
+Infrastructure  ← from Domain and Application
+Presentation    ← from all layers
 ```
 
-### Import qilish qoidalari jadvali
+### Import Rules Table
 
-| Layer | Import qilishi MUMKIN | Import qilishi MUMKIN EMAS |
-|-------|----------------------|---------------------------|
+| Layer | CAN import | CANNOT import |
+|-------|-----------|---------------|
 | Domain | Python stdlib | Django, DRF, Application, Infrastructure, Presentation |
 | Application | Domain | Django, DRF, Infrastructure, Presentation |
 | Infrastructure | Domain, Application, Django ORM | DRF, Presentation |
-| Presentation | Hammasi | — |
+| Presentation | Everything | — |
 
-> **Muhim:** Bu qoidani buzish arxitektura buzilishiga olib keladi.
+> **Important:** Breaking this rule leads to architecture violations.
 
-## Yangi Feature Qo'shish (7 Bosqich)
+## Adding a New Feature (7 Steps)
 
-Masalan, `Category` entity qo'shmoqchisiz:
+For example, adding a `Category` entity:
 
-### 1-bosqich: Domain Layer
+### Step 1: Domain Layer
 ```python
 # domain/entities.py
 @dataclass
@@ -165,7 +165,7 @@ class CategoryNotFoundError(Exception): ...
 class DuplicateCategoryError(Exception): ...
 ```
 
-### 2-bosqich: Application Layer
+### Step 2: Application Layer
 ```python
 # application/interfaces.py
 class AbstractCategoryRepository(ABC):
@@ -182,7 +182,7 @@ class CategoryService:
         self._repo = repository
 ```
 
-### 3-bosqich: Infrastructure Layer
+### Step 3: Infrastructure Layer
 ```python
 # infrastructure/models.py
 class Category(models.Model):
@@ -196,57 +196,57 @@ class DjangoCategoryRepository(AbstractCategoryRepository):
     def create(self, entity): ...
 ```
 
-### 4-bosqich: Presentation Layer
+### Step 4: Presentation Layer
 - `serializers.py` — `CategorySerializer`
 - `views.py` — `CategoryViewSet`
-- `permissions.py` — kerak bo'lsa
-- `urls.py` — router registratsiya
+- `permissions.py` — if needed
+- `urls.py` — router registration
 
-### 5-bosqich: Proxy Model
+### Step 5: Proxy Model
 ```python
 # apps/<app>/models.py
 from apps.<app>.infrastructure.models import Category
 ```
 
-### 6-bosqich: Testlar
-- `test_domain.py` — entity va exception testlari
-- `test_services.py` — mock repository bilan service testlari
-- `test_repositories.py` — real DB bilan integration testlari
-- `test_models.py` — ORM model testlari
-- `test_serializers.py` — serializer validatsiya testlari
-- `test_views.py` — HTTP endpoint testlari
+### Step 6: Tests
+- `test_domain.py` — entity and exception tests
+- `test_services.py` — service tests with mock repository
+- `test_repositories.py` — integration tests with real DB
+- `test_models.py` — ORM model tests
+- `test_serializers.py` — serializer validation tests
+- `test_views.py` — HTTP endpoint tests
 
-### 7-bosqich: Dokumentatsiya
-- Layer README'larini yangilang
-- API endpointlarni asosiy README ga qo'shing
+### Step 7: Documentation
+- Update layer READMEs
+- Add API endpoints to main README
 
-## Test Yozish Qoidalari
+## Test Writing Rules
 
-1. Har bir layer uchun **alohida test fayli** (`test_<layer>.py`)
-2. Har bir test uchun kamida **happy path + xato holat**
-3. Domain va Service testlari **DB ishlatmasligi** kerak
-4. `@pytest.mark.django_db` faqat DB kerak bo'lganda
-5. `conftest.py` dagi shared fixturelardan foydalaning
-6. Test nomlari aniq bo'lsin: `test_create_book_duplicate_isbn`
+1. A **separate test file** for each layer (`test_<layer>.py`)
+2. At least **happy path + error case** for each test
+3. Domain and Service tests **must not use DB**
+4. `@pytest.mark.django_db` only when DB is needed
+5. Use shared fixtures from `conftest.py`
+6. Test names should be clear: `test_create_book_duplicate_isbn`
 
-### Testlarni ishga tushirish
+### Running Tests
 
 ```bash
-make test           # Barcha testlar
-make test-cov       # Coverage bilan
-pytest -k "test_create" -v   # Nomi bo'yicha
+make test           # All tests
+make test-cov       # With coverage
+pytest -k "test_create" -v   # By name
 ```
 
-## Foydali Buyruqlar
+## Useful Commands
 
 ```bash
-uv sync --all-extras # Dependencylar o'rnatish
+uv sync --all-extras # Install dependencies
 make run             # Development server
-make migrate         # Migratsiyalar
-make test            # Testlar
+make migrate         # Migrations
+make test            # Tests
 make test-cov        # Test coverage
 make lint            # Ruff lint
 make shell           # Django shell
-make superuser       # Superuser yaratish
-make flush           # Database tozalash
+make superuser       # Create superuser
+make flush           # Clear database
 ```
